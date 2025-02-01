@@ -1,6 +1,8 @@
-importScripts(
-    './plugin.js'
-);
+if( 'function' === typeof importScripts) {
+    importScripts(
+        './plugin.js'
+    );
+}
 
 chrome.alarms.onAlarm.addListener(() => {
     updateMonitoring();

@@ -1,33 +1,37 @@
-const myAudio = new Audio();
-var defaultSoundUrl = 'alarm.mp3';
+let myAudio = new Audio();
+let defaultSoundUrl = 'alarm.mp3';
 
 function saveOptions() {
-    if (!jQuery('#soundUrl').val()) {
-        jQuery('#soundUrl').val(defaultSoundUrl)
+    let soundUrlInput = document.getElementById('soundUrl');
+    if (!soundUrlInput.value) {
+        soundUrlInput.value = defaultSoundUrl;
     }
     myAudio.pause();
     myAudio.currentTime = 0.0;
-    var wigoUrl = jQuery('#wigoUrl').val();
-    var soundVolume = jQuery('#soundVolume').val();
-    var soundUrl = jQuery('#soundUrl').val();
+    
+    let wigoUrl = document.getElementById('wigoUrl').value;
+    let soundVolume = document.getElementById('soundVolume').value;
+    let soundUrl = soundUrlInput.value;
+    
     chrome.storage.sync.set({
         wigoUrl: wigoUrl,
         soundVolume: soundVolume,
         soundUrl: soundUrl
     }, function () {
-        jQuery('#status').html('Options saved !');
-        jQuery('#status').show();
+        let status = document.getElementById('status');
+        status.innerHTML = 'Options saved !';
+        status.style.display = 'block';
         restoreOptions();
         chrome.runtime.sendMessage({ updateMonitoring: true });
         setTimeout(function () {
-            jQuery('#status').fadeOut();
+            status.style.display = 'none';
         }, 3 * 1000);
     });
 }
 
 function testSound() {
-    var soundVolume = jQuery('#soundVolume').val();
-    var soundUrl = jQuery('#soundUrl').val();
+    let soundVolume = document.getElementById('soundVolume').value;
+    let soundUrl = document.getElementById('soundUrl').value;
     myAudio.pause();
     myAudio.currentTime = 0.0;
     myAudio.src = soundUrl;
@@ -42,45 +46,53 @@ function stopSound() {
 
 function restoreOptions() {
     chrome.storage.sync.get(null, function (options) {
+        let wigoUrlInput = document.getElementById('wigoUrl');
+        let soundVolumeInput = document.getElementById('soundVolume');
+        let soundUrlInput = document.getElementById('soundUrl');
+
         if (options.hasOwnProperty('wigoUrl')) {
-            jQuery('#wigoUrl').val(options.wigoUrl);
+            wigoUrlInput.value = options.wigoUrl;
         }
         if (options.hasOwnProperty('soundVolume')) {
-            jQuery('#soundVolume').val(options.soundVolume);
-        }
-        else {
-            jQuery('#soundVolume').val(1);
+            soundVolumeInput.value = options.soundVolume;
+        } else {
+            soundVolumeInput.value = 1;
         }
         if (options.hasOwnProperty('soundUrl')) {
-            jQuery('#soundUrl').val(options.soundUrl);
-        }
-        else {
-            jQuery('#soundUrl').val(defaultSoundUrl);
+            soundUrlInput.value = options.soundUrl;
+        } else {
+            soundUrlInput.value = defaultSoundUrl;
         }
     });
 }
-jQuery(document).ready(function () {
+
+document.addEventListener('DOMContentLoaded', function() {
     restoreOptions();
-});
-jQuery('form').submit(function () {
-    saveOptions();
-    return false;
-});
-jQuery('#soundVolume').change(function () {
-    if (!jQuery('#soundUrl').val()) {
-        jQuery('#soundUrl').val(defaultSoundUrl)
-    }
-    testSound();
-});
-jQuery('#soundTest').click(function () {
-    if (!jQuery('#soundUrl').val()) {
-        jQuery('#soundUrl').val(defaultSoundUrl)
-    }
-    testSound();
-});
-jQuery('#soundStop').click(function () {
-    stopSound();
-});
-jQuery('#soundReset').click(function () {
-    jQuery('#soundUrl').val(defaultSoundUrl);
+    
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveOptions();
+    });
+
+    document.getElementById('soundVolume').addEventListener('change', function() {
+        let soundUrlInput = document.getElementById('soundUrl');
+        if (!soundUrlInput.value) {
+            soundUrlInput.value = defaultSoundUrl;
+        }
+        testSound();
+    });
+
+    document.getElementById('soundTest').addEventListener('click', function() {
+        let soundUrlInput = document.getElementById('soundUrl');
+        if (!soundUrlInput.value) {
+            soundUrlInput.value = defaultSoundUrl;
+        }
+        testSound();
+    });
+
+    document.getElementById('soundStop').addEventListener('click', stopSound);
+
+    document.getElementById('soundReset').addEventListener('click', function() {
+        document.getElementById('soundUrl').value = defaultSoundUrl;
+    });
 });

@@ -5,6 +5,16 @@ function loading() {
 async function playSound(source, volume) {
     console.debug("Playing sound " + source + " with volume " + volume);
     try {
+        if(!chrome.offscreen) {
+            console.debug("Offscreen not available, trying to play sound locally");
+            const audio = new Audio();
+            await audio.pause();
+            audio.currentTime = 0.0;
+            audio.src = source;
+            audio.volume = volume;
+            await audio.play();
+            return;
+        }
         await createOffscreen();
         await chrome.runtime.sendMessage({ play: { source, volume } });
     } catch (e) {
@@ -13,6 +23,10 @@ async function playSound(source, volume) {
 }
 
 async function createOffscreen() {
+    if(!chrome.offscreen) {
+        console.debug("Offscreen does not exist on this browser, cannot create offscreen");
+        return;
+    }
     if (await chrome.offscreen.hasDocument()) return;
     await chrome.offscreen.createDocument({
         url: 'offscreen.html',
@@ -21,22 +35,24 @@ async function createOffscreen() {
     });
 }
 
-var defaultSoundUrl = 'alarm.mp3';
-var soundUrl = defaultSoundUrl;
-var soundVolume = 1;
 chrome.action.setPopup({ 'popup': 'popup.html' });
 
 async function updateMonitoring() {
     chrome.storage.sync.get(null, async function (options) {
+        let soundUrl = 'alarm.mp3';
+        let soundVolume = 1;
         if (options.hasOwnProperty('soundVolume') && options.soundVolume) {
             soundVolume = options.soundVolume;
         }
         if (options.hasOwnProperty('soundUrl') && options.soundUrl) {
             soundUrl = options.soundUrl;
         }
+        if (!/^https?:\/\//.test(soundUrl)) {
+            soundUrl = chrome.runtime.getURL(soundUrl);
+        }
         if (options.hasOwnProperty('wigoUrl') && options.wigoUrl) {
             let hostsStatuses = await loadGroups(options.wigoUrl);
-            updateDisplay(hostsStatuses);
+            updateDisplay(hostsStatuses, options.wigoUrl, soundUrl, soundVolume);
         } else {
             renderPluginError('CONF');
         }
@@ -105,7 +121,7 @@ function getHostStatus(host) {
     return 'ok';
 }
 
-function updateDisplay(hostsStatuses) {
+function updateDisplay(hostsStatuses, wigoUrl, soundUrl, soundVolume) {
     var currentStatus = 'ok';
     var currentNb = 0;
     for (var status of ['down', 'err', 'crit', 'warn', 'info', 'ok']) {

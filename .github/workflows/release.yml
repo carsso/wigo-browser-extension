@@ -1,0 +1,20 @@
+name: Build and Release
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: make all
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release/wigo-monitoring-firefox-0.2.4.zip
+            release/wigo-monitoring-chrome-0.2.4.zip
